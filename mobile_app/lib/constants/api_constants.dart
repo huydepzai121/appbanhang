@@ -1,0 +1,45 @@
+class ApiConstants {
+  static const String baseUrl = 'http://10.0.2.2:3000/api';
+
+  // Auth endpoints
+  static const String login = '$baseUrl/auth/login';
+  static const String register = '$baseUrl/auth/register';
+  static const String profile = '$baseUrl/auth/profile';
+  static const String changePassword = '$baseUrl/auth/change-password';
+  static const String verifyToken = '$baseUrl/auth/verify';
+
+  // Products endpoints
+  static const String products = '$baseUrl/products';
+
+  // Categories endpoints
+  static const String categories = '$baseUrl/categories';
+
+  // Cart endpoints
+  static const String cart = '$baseUrl/cart';
+  static const String addToCart = '$baseUrl/cart/add';
+
+  // Orders endpoints
+  static const String orders = '$baseUrl/orders';
+
+  // Reviews endpoints
+  static const String reviews = '$baseUrl/reviews';
+
+  // Users endpoints (Admin)
+  static const String users = '$baseUrl/users';
+
+  // Admin endpoints
+  static const String adminDashboard = '$baseUrl/admin/dashboard';
+  static const String adminOrders = '$baseUrl/admin/orders';
+  static const String adminUsers = '$baseUrl/admin/users';
+
+  // Headers
+  static Map<String, String> get headers => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  static Map<String, String> headersWithAuth(String token) => {
+    ...headers,
+    'Authorization': 'Bearer $token',
+  };
+}

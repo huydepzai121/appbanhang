@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import 'edit_user_screen.dart';
 
 class UserManagementScreen extends StatefulWidget {
@@ -33,69 +36,48 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       _isLoading = true;
     });
 
-    // Simulate loading users from API
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
 
-    setState(() {
-      _users = [
-        {
-          'id': 1,
-          'name': 'Admin',
-          'email': 'admin@phonestore.com',
-          'phone': '0123456789',
-          'address': 'Hà Nội',
-          'role': 'admin',
-          'createdAt': DateTime.now().subtract(const Duration(days: 30)),
-          'totalOrders': 0,
-          'totalSpent': 0,
-        },
-        {
-          'id': 2,
-          'name': 'Nguyễn Văn A',
-          'email': 'nguyenvana@gmail.com',
-          'phone': '0987654321',
-          'address': '123 Đường ABC, Quận 1, TP.HCM',
-          'role': 'customer',
-          'createdAt': DateTime.now().subtract(const Duration(days: 15)),
-          'totalOrders': 5,
-          'totalSpent': 75000000,
-        },
-        {
-          'id': 3,
-          'name': 'Trần Thị B',
-          'email': 'tranthib@gmail.com',
-          'phone': '0912345678',
-          'address': '456 Đường XYZ, Quận 2, TP.HCM',
-          'role': 'customer',
-          'createdAt': DateTime.now().subtract(const Duration(days: 10)),
-          'totalOrders': 3,
-          'totalSpent': 45000000,
-        },
-        {
-          'id': 4,
-          'name': 'Lê Văn C',
-          'email': 'levanc@gmail.com',
-          'phone': '0934567890',
-          'address': '789 Đường DEF, Quận 3, TP.HCM',
-          'role': 'customer',
-          'createdAt': DateTime.now().subtract(const Duration(days: 5)),
-          'totalOrders': 1,
-          'totalSpent': 15000000,
-        },
-        {
-          'id': 5,
-          'name': 'Phạm Thị D',
-          'email': 'phamthid@gmail.com',
-          'phone': '0945678901',
-          'address': '321 Đường GHI, Quận 4, TP.HCM',
-          'role': 'customer',
-          'createdAt': DateTime.now().subtract(const Duration(days: 2)),
-          'totalOrders': 2,
-          'totalSpent': 30000000,
-        },
-      ];
-      _isLoading = false;
-    });
+      if (token == null) {
+        throw Exception('Không có quyền truy cập');
+      }
+
+      // Load users from API
+      final usersData = await ApiService.getAllUsers(token);
+
+      setState(() {
+        _users = usersData.map<Map<String, dynamic>>((user) {
+          return {
+            'id': user['id'],
+            'name': user['name'],
+            'email': user['email'],
+            'phone': user['phone'],
+            'address': user['address'],
+            'role': user['role'],
+            'createdAt': DateTime.parse(user['created_at']),
+            'totalOrders': 0, // TODO: Calculate from orders
+            'totalSpent': 0, // TODO: Calculate from orders
+          };
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _users = [];
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi tải danh sách người dùng: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
@@ -492,10 +474,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ),
     );
 
-    // Refresh user list if edit was successful
-    if (result == true) {
-      _loadUsers();
-    }
+    // Always refresh user list after edit (whether successful or not)
+    _loadUsers();
   }
 
   @override

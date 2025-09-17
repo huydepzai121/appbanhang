@@ -33,15 +33,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final data = await ApiService.getDashboardStats(token);
 
       setState(() {
+        final ordersData = data['data']['orders'] ?? {};
+        final productsData = data['data']['products'] ?? {};
+        final usersData = data['data']['users'] ?? {};
+
         _stats = {
-          'totalProducts': data['data']['products']['total_products'] ?? 0,
-          'totalOrders': data['data']['orders']['total_orders'] ?? 0,
-          'totalUsers': data['data']['users']['total_users'] ?? 0,
-          'totalRevenue': (data['data']['orders']['total_revenue'] ?? 0).toDouble(),
-          'todayOrders': data['data']['orders']['today_orders'] ?? 0,
-          'pendingOrders': data['data']['orders']['pending_orders'] ?? 0,
-          'completedOrders': data['data']['orders']['delivered_orders'] ?? 0,
-          'cancelledOrders': data['data']['orders']['cancelled_orders'] ?? 0,
+          'totalProducts': productsData['total_products'] ?? 0,
+          'totalOrders': ordersData['total_orders'] ?? 0,
+          'totalUsers': usersData['total_users'] ?? 0,
+          'totalRevenue': _parseToDouble(ordersData['total_revenue']),
+          'todayOrders': ordersData['today_orders'] ?? 0,
+          'pendingOrders': ordersData['pending_orders'] ?? 0,
+          'completedOrders': ordersData['delivered_orders'] ?? 0,
+          'cancelledOrders': ordersData['cancelled_orders'] ?? 0,
         };
         _isLoading = false;
       });
@@ -175,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         _buildStatCard(
                           'Doanh thu',
-                          '${(_stats['totalRevenue'] / 1000000).toStringAsFixed(1)}M',
+                          _formatRevenue(_stats['totalRevenue']),
                           Icons.attach_money,
                           Colors.orange,
                         ),
@@ -283,6 +287,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
     );
+  }
+
+  double _parseToDouble(dynamic value) {
+    try {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) {
+        return double.tryParse(value) ?? 0.0;
+      }
+      return 0.0;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  String _formatRevenue(dynamic revenue) {
+    try {
+      double revenueValue = 0.0;
+      if (revenue is double) {
+        revenueValue = revenue;
+      } else if (revenue is int) {
+        revenueValue = revenue.toDouble();
+      } else if (revenue is String) {
+        revenueValue = double.tryParse(revenue) ?? 0.0;
+      }
+      return '${(revenueValue / 1000000).toStringAsFixed(1)}M';
+    } catch (e) {
+      return '0.0M';
+    }
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {

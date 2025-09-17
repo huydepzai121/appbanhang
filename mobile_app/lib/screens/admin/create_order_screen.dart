@@ -470,11 +470,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
+      print('Create order error: $e'); // Debug log
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Lỗi: $e'),
+            content: Text('Lỗi tạo đơn hàng: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

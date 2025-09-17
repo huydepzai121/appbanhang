@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { successResponse, errorResponse } = require('../utils/helpers');
@@ -272,28 +273,17 @@ router.post('/orders', authenticateToken, requireAdmin, async (req, res) => {
             // Generate order number
             const orderNumber = `ORD${Date.now()}`;
 
-            // Create a guest user first (since user_id is required)
-            const [userResult] = await connection.execute(`
-                INSERT INTO users (name, email, phone, address, role, password)
-                VALUES (?, ?, ?, ?, 'customer', ?)
-            `, [
-                customer_name,
-                `guest_${Date.now()}@phonestore.com`, // Generate unique email
-                customer_phone,
-                customer_address,
-                'guest_password' // Default password for guest users
-            ]);
+            // Use admin user as the order creator (since user_id is required)
+            const adminUserId = req.user.id; // Get admin user ID from token
 
-            const guestUserId = userResult.insertId;
-
-            // Create order with proper column names
+            // Create order with admin user_id but customer shipping info
             const [orderResult] = await connection.execute(`
                 INSERT INTO orders (
                     order_number, user_id, shipping_name, shipping_phone,
                     shipping_address, notes, total_amount, final_amount, status
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [
-                orderNumber, guestUserId, customer_name, customer_phone,
+                orderNumber, adminUserId, customer_name, customer_phone,
                 customer_address, notes || null, total_amount, total_amount, status
             ]);
 
@@ -301,10 +291,11 @@ router.post('/orders', authenticateToken, requireAdmin, async (req, res) => {
 
             // Add order items
             for (const item of items) {
+                const itemTotal = item.price * item.quantity;
                 await connection.execute(`
-                    INSERT INTO order_items (order_id, product_id, quantity, price)
-                    VALUES (?, ?, ?, ?)
-                `, [orderId, item.product_id, item.quantity, item.price]);
+                    INSERT INTO order_items (order_id, product_id, quantity, price, total)
+                    VALUES (?, ?, ?, ?, ?)
+                `, [orderId, item.product_id, item.quantity, item.price, itemTotal]);
 
                 // Update product stock
                 await connection.execute(`

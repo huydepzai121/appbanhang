@@ -5,6 +5,23 @@ import '../models/product.dart';
 import '../models/user.dart';
 
 class ApiService {
+  // Test connection to the server
+  static Future<bool> testConnection() async {
+    try {
+      print('Debug: Testing connection to ${ApiConstants.baseUrl}');
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl.replaceAll('/api', '')}/api/auth/verify'),
+        headers: ApiConstants.headers,
+      ).timeout(const Duration(seconds: 10));
+
+      print('Debug: Connection test response: ${response.statusCode}');
+      return response.statusCode == 401; // 401 is expected without token
+    } catch (e) {
+      print('Debug: Connection test failed: $e');
+      return false;
+    }
+  }
+
   static Future<Map<String, dynamic>> _handleResponse(http.Response response) async {
     final Map<String, dynamic> data = json.decode(response.body);
 
@@ -220,13 +237,29 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getAllOrders(String token) async {
-    final response = await http.get(
-      Uri.parse(ApiConstants.adminOrders),
-      headers: ApiConstants.headersWithAuth(token),
-    );
+    try {
+      print('Debug: Making request to ${ApiConstants.adminOrders}');
+      print('Debug: Token: ${token.substring(0, 20)}...');
 
-    final data = await _handleResponse(response);
-    return data['data']['orders'];
+      final response = await http.get(
+        Uri.parse(ApiConstants.adminOrders),
+        headers: ApiConstants.headersWithAuth(token),
+      );
+
+      print('Debug: Response status: ${response.statusCode}');
+      print('Debug: Response body: ${response.body}');
+
+      final data = await _handleResponse(response);
+
+      if (data['data'] == null || data['data']['orders'] == null) {
+        throw Exception('Invalid response structure: ${data.toString()}');
+      }
+
+      return data['data']['orders'];
+    } catch (e) {
+      print('Debug: getAllOrders error: $e');
+      rethrow;
+    }
   }
 
   static Future<Map<String, dynamic>> updateOrderStatus(

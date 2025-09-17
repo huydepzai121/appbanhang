@@ -41,12 +41,32 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
 
+      print('Debug: Loading orders...');
+      print('Debug: Token exists: ${token != null}');
+      print('Debug: User is admin: ${authProvider.isAdmin}');
+
       if (token == null) {
-        throw Exception('Không có quyền truy cập');
+        throw Exception('Không có quyền truy cập - Token không tồn tại');
       }
 
+      if (!authProvider.isAdmin) {
+        throw Exception('Không có quyền truy cập - Không phải admin');
+      }
+
+      // Test connection first
+      print('Debug: Testing connection...');
+      final connectionOk = await ApiService.testConnection();
+      if (!connectionOk) {
+        throw Exception('Không thể kết nối đến server. Kiểm tra:\n'
+            '1. Server có đang chạy không?\n'
+            '2. Địa chỉ IP có đúng không?\n'
+            '3. Kết nối mạng có ổn định không?');
+      }
+
+      print('Debug: Calling API...');
       // Load orders from API
       final ordersData = await ApiService.getAllOrders(token);
+      print('Debug: API response received: ${ordersData.length} orders');
 
       setState(() {
         _orders = ordersData.map<Map<String, dynamic>>((order) {
@@ -63,7 +83,10 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
         }).toList();
         _isLoading = false;
       });
+
+      print('Debug: Orders loaded successfully: ${_orders.length} orders');
     } catch (e) {
+      print('Debug: Error loading orders: $e');
       setState(() {
         _orders = [];
         _isLoading = false;
@@ -74,6 +97,7 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
           SnackBar(
             content: Text('Lỗi tải đơn hàng: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

@@ -283,3 +283,4 @@ Nếu gặp lỗi, hãy kiểm tra:
 4. ✅ Chrome browser có thể truy cập http://localhost:3000/api/health
 
 **Thứ tự quan trọng:** Database → Backend → Mobile App
+test

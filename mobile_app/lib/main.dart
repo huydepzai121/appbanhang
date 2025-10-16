@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/product_provider.dart';
@@ -11,8 +12,16 @@ import 'screens/product/product_detail_screen.dart';
 import 'screens/cart/cart_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/admin/admin_screen.dart';
+import 'utils/debug_helper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Check connectivity in debug mode
+  if (kDebugMode) {
+    DebugHelper.checkConnectivity();
+  }
+
   runApp(const MyApp());
 }
 

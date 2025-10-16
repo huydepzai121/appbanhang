@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
@@ -27,17 +28,43 @@ class AuthProvider with ChangeNotifier {
       final userJson = prefs.getString('user');
 
       if (_token != null && userJson != null) {
-        // Verify token is still valid
+        // Load user from storage first (offline mode)
         try {
-          _user = await ApiService.getProfile(_token!);
+          final userMap = json.decode(userJson);
+          _user = User.fromJson(userMap);
           notifyListeners();
         } catch (e) {
-          // Token expired or invalid, clear storage
-          await _clearStorage();
+          print('Error parsing stored user: $e');
         }
+
+        // Then verify token in background (don't block UI)
+        _verifyTokenInBackground();
       }
     } catch (e) {
       print('Error loading user from storage: $e');
+    }
+  }
+
+  Future<void> _verifyTokenInBackground() async {
+    try {
+      if (_token != null) {
+        // Add timeout to prevent hanging
+        _user = await ApiService.getProfile(_token!).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            print('Token verification timeout');
+            throw Exception('Connection timeout');
+          },
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Token verification failed: $e');
+      // Don't clear storage immediately, user might be offline
+      // Only clear if it's an authentication error (401)
+      if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+        await _clearStorage();
+      }
     }
   }
 
@@ -46,7 +73,7 @@ class AuthProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       if (_token != null && _user != null) {
         await prefs.setString('token', _token!);
-        await prefs.setString('user', _user!.toJson().toString());
+        await prefs.setString('user', json.encode(_user!.toJson()));
       }
     } catch (e) {
       print('Error saving user to storage: $e');

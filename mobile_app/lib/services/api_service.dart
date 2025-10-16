@@ -23,12 +23,27 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> _handleResponse(http.Response response) async {
-    final Map<String, dynamic> data = json.decode(response.body);
+    try {
+      final Map<String, dynamic> data = json.decode(response.body);
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return data;
-    } else {
-      throw Exception(data['message'] ?? 'API Error');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return data;
+      } else {
+        String errorMessage = data['message'] ?? 'API Error';
+        if (response.statusCode == 401) {
+          errorMessage = 'Unauthorized - Please login again';
+        } else if (response.statusCode == 404) {
+          errorMessage = 'Resource not found';
+        } else if (response.statusCode >= 500) {
+          errorMessage = 'Server error - Please try again later';
+        }
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      if (e is FormatException) {
+        throw Exception('Invalid response format from server');
+      }
+      rethrow;
     }
   }
 
@@ -41,7 +56,7 @@ class ApiService {
         'email': email,
         'password': password,
       }),
-    );
+    ).timeout(const Duration(seconds: 10));
 
     return _handleResponse(response);
   }
@@ -72,7 +87,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse(ApiConstants.profile),
       headers: ApiConstants.headersWithAuth(token),
-    );
+    ).timeout(const Duration(seconds: 10));
 
     final data = await _handleResponse(response);
     return User.fromJson(data['data']);
@@ -118,7 +133,8 @@ class ApiService {
     }
 
     final uri = Uri.parse(ApiConstants.products).replace(queryParameters: queryParams);
-    final response = await http.get(uri, headers: ApiConstants.headers);
+    final response = await http.get(uri, headers: ApiConstants.headers)
+        .timeout(const Duration(seconds: 10));
 
     return _handleResponse(response);
   }
@@ -138,7 +154,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse(ApiConstants.cart),
       headers: ApiConstants.headersWithAuth(token),
-    );
+    ).timeout(const Duration(seconds: 10));
 
     return _handleResponse(response);
   }
@@ -151,7 +167,35 @@ class ApiService {
         'product_id': productId,
         'quantity': quantity,
       }),
-    );
+    ).timeout(const Duration(seconds: 10));
+
+    await _handleResponse(response);
+  }
+
+  static Future<void> updateCartItem(String token, int cartItemId, int quantity) async {
+    final response = await http.put(
+      Uri.parse(ApiConstants.cartItem(cartItemId)),
+      headers: ApiConstants.headersWithAuth(token),
+      body: json.encode({'quantity': quantity}),
+    ).timeout(const Duration(seconds: 10));
+
+    await _handleResponse(response);
+  }
+
+  static Future<void> removeCartItem(String token, int cartItemId) async {
+    final response = await http.delete(
+      Uri.parse(ApiConstants.cartItem(cartItemId)),
+      headers: ApiConstants.headersWithAuth(token),
+    ).timeout(const Duration(seconds: 10));
+
+    await _handleResponse(response);
+  }
+
+  static Future<void> clearCart(String token) async {
+    final response = await http.delete(
+      Uri.parse(ApiConstants.cart),
+      headers: ApiConstants.headersWithAuth(token),
+    ).timeout(const Duration(seconds: 10));
 
     await _handleResponse(response);
   }

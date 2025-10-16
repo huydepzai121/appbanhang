@@ -17,20 +17,30 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthStatus() async {
-    await Future.delayed(const Duration(seconds: 2));
+    // Give some time for the splash screen to show
+    await Future.delayed(const Duration(milliseconds: 500));
 
     if (mounted) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      if (authProvider.isAuthenticated) {
-        // Check if user is admin
-        if (authProvider.isAdmin) {
-          Navigator.of(context).pushReplacementNamed('/admin');
+      // Wait a bit more for auth provider to load from storage
+      int attempts = 0;
+      while (attempts < 10 && !authProvider.isAuthenticated && authProvider.token == null) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        attempts++;
+      }
+
+      if (mounted) {
+        if (authProvider.isAuthenticated) {
+          // Check if user is admin
+          if (authProvider.isAdmin) {
+            Navigator.of(context).pushReplacementNamed('/admin');
+          } else {
+            Navigator.of(context).pushReplacementNamed('/home');
+          }
         } else {
-          Navigator.of(context).pushReplacementNamed('/home');
+          Navigator.of(context).pushReplacementNamed('/login');
         }
-      } else {
-        Navigator.of(context).pushReplacementNamed('/login');
       }
     }
   }

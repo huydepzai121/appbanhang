@@ -80,9 +80,10 @@ app.use((error, req, res, next) => {
 const startServer = async () => {
     try {
         await testConnection();
-        app.listen(PORT, () => {
+        app.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 Server is running on port ${PORT}`);
             console.log(`📱 Phone Store API: http://localhost:${PORT}/api`);
+            console.log(`📱 For Android Emulator: http://10.0.2.2:${PORT}/api`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);

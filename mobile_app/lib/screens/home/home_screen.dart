@@ -68,7 +68,11 @@ class _HomeTabState extends State<HomeTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductProvider>(context, listen: false).fetchProducts();
+      final productProvider = Provider.of<ProductProvider>(context, listen: false);
+      // Only fetch if we don't have products yet
+      if (productProvider.products.isEmpty && !productProvider.isLoading) {
+        productProvider.fetchProducts();
+      }
     });
   }
 

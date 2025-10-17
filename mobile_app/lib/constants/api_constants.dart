@@ -1,12 +1,12 @@
 class ApiConstants {
   // Configure this based on your testing environment:
-  // - Android Emulator: 'http://10.0.2.2:3000/api' (if 10.0.2.2 works)
+  // - Android Emulator: 'http://10.0.2.2:3000/api' (special emulator IP)
   // - iOS Simulator: 'http://localhost:3000/api' or 'http://127.0.0.1:3000/api'
   // - Real Device: 'http://YOUR_COMPUTER_IP:3000/api' (e.g., 'http://192.168.1.100:3000/api')
-  static const String baseUrl = 'http://192.168.1.59:3000/api';
+  static const String baseUrl = 'http://10.0.2.2:3000/api';
 
   // Alternative URLs for different environments (uncomment as needed):
-  // static const String baseUrl = 'http://10.0.2.2:3000/api'; // Android emulator (if working)
+  // static const String baseUrl = 'http://192.168.1.59:3000/api'; // Real IP (works for emulator & real device)
   // static const String baseUrl = 'http://localhost:3000/api'; // iOS Simulator
   // static const String baseUrl = 'http://127.0.0.1:3000/api'; // Loopback
 
